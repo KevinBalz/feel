@@ -3,6 +3,8 @@ project("feel")
 
 set(CMAKE_CXX_STANDARD 11)
 
+include_directories("dependencies/asio/asio/include")
+include_directories("include")
 set(EXECUTABLE_NAME "hello-feel")
-set(SOURCE_FILES "src/main.cpp")
+set(SOURCE_FILES "src/main.cpp" include/Finger.hpp)
 add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES})
