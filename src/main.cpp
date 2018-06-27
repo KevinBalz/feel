@@ -8,6 +8,8 @@
 #include <chrono>
 #include <thread>
 
+class SerialConnection;
+void ReadingThread(SerialConnection& connection);
 class SerialConnection
 {
 public:
@@ -41,13 +43,13 @@ private:
 
 void ReadSerial(SerialConnection& connection, asio::serial_port& serial, asio::streambuf& b)
 {
-	asio::async_read_until(serial, b, '\n', [&](auto ec, auto s)
+	asio::async_read_until(serial, b, '#', [&](auto ec, auto s)
 	{
 		std::lock_guard<std::mutex> lock(connection.inputMutex);
-		b.commit(s);
-		std::string out;
-		std::istream(&b) >> out;
-		connection.inputs.push(out);
+		std::string command{
+				asio::buffers_begin(b.data()), asio::buffers_begin(b.data()) + s - 1};
+		b.consume(s);
+		connection.inputs.push(command);
 		ReadSerial(connection, serial, b);
 	});
 }
@@ -57,7 +59,7 @@ void ReadingThread(SerialConnection& connection)
 	std::cout << "Hello Feel" << std::endl;
 	asio::io_service io;
 	asio::serial_port serial(io, "\\\\.\\COM3");
-	serial.set_option(asio::serial_port::baud_rate(9600));
+	serial.set_option(asio::serial_port::baud_rate(115200));
 	serial.set_option(asio::serial_port::character_size(8));
 	asio::streambuf b;
 	ReadSerial(connection, serial, b);
