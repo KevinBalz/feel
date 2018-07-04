@@ -1,9 +1,9 @@
+#pragma once
 #include "SerialDevice.hpp"
 #include "Finger.hpp"
 #include "IncomingMessage.hpp"
 #include <iomanip>
 #include <map>
-#pragma once
 #include <cassert>
 
 namespace feel
