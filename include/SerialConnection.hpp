@@ -3,6 +3,7 @@
 #include <thread>
 #include <queue>
 #include <iostream>
+#include <functional>
 
 namespace feel
 {
@@ -24,7 +25,7 @@ namespace feel
 			worker.join();
 		}
 
-		void IterateAllMessages(void (*callback)(std::string&))
+		void IterateAllMessages(std::function<void(std::string)> callback)
 		{
 			std::lock_guard<std::mutex> lock(inputMutex);
 			while (!inputs.empty())

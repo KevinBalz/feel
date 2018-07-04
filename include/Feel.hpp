@@ -37,9 +37,14 @@ namespace feel
 			connection.SendSerialMessage("WF", stream.str());
 		}
 
+		float GetFingerAngle(Finger finger)
+		{
+			return fingerAngles[static_cast<int>(finger)];
+		}
+
 		void ParseMessages()
 		{
-			connection.IterateAllMessages([](auto message)
+			connection.IterateAllMessages([&](auto message)
 			{
 				std::map<std::string, IncomingMessage> incomingMessageMap =
 				{
@@ -53,11 +58,17 @@ namespace feel
 						std::cout << "DebugLog: " << message.substr(2) << std::endl;
 						break;
 					case IncomingMessage::FingerUpdate:
-						std::cout << "Finger: " << message.substr(2, 2) << " Angle: " << message.substr(4) << std::endl;
+						std::string fingerIdentifier = message.substr(2, 2);
+						std::string fingerAngle = message.substr(4);
+						std::cout << "Finger: " << fingerIdentifier << " Angle: " << fingerAngle << std::endl;
+						int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
+						fingerAngles[fingerIndex] = std::stof(fingerAngle);
+						break;
 				}
 			});
 		}
 	private:
 		SerialConnection connection;
+		float fingerAngles[FINGER_TYPE_COUNT] = {};
 	};
 }

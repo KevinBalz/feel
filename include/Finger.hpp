@@ -13,6 +13,8 @@ namespace feel
         HAND_0_RING_0,
         HAND_0_RING_1,
         HAND_0_PINKY_0,
-        HAND_0_PINKY_1,
+        HAND_0_PINKY_1
     };
+
+	const int FINGER_TYPE_COUNT = static_cast<int>(Finger::HAND_0_PINKY_1) + 1;
 }
