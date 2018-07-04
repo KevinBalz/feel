@@ -1,4 +1,3 @@
-#define ASIO_STANDALONE
 #include "Feel.hpp"
 
 #include <chrono>

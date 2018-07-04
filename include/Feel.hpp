@@ -1,4 +1,4 @@
-#include "SerialConnection.hpp"
+#include "SerialDevice.hpp"
 #include "Finger.hpp"
 #include "IncomingMessage.hpp"
 #include <iomanip>
@@ -13,17 +13,17 @@ namespace feel
 	public:
 		Feel()
 		{
-			connection.SendSerialMessage("BS");
+			device.TransmitMessage("BS");
 		}
 
 		void EndSession()
 		{
-			connection.SendSerialMessage("ES");
+			device.TransmitMessage("ES");
 		}
 
 		void SubscribeForFingerUpdates(bool active = true)
 		{
-			connection.SendSerialMessage("SS", active ? "1" : "0");
+			device.TransmitMessage("SS", active ? "1" : "0");
 		}
 
 		void SetFingerAngle(Finger finger, float angle)
@@ -34,7 +34,7 @@ namespace feel
 				<< std::setfill('0') << std::setw(2)
 				<< std::hex << fingerNumber
 				<< std::dec << angle;
-			connection.SendSerialMessage("WF", stream.str());
+			device.TransmitMessage("WF", stream.str());
 		}
 
 		float GetFingerAngle(Finger finger)
@@ -44,9 +44,9 @@ namespace feel
 
 		void ParseMessages()
 		{
-			connection.IterateAllMessages([&](auto message)
+			device.IterateAllMessages([&](auto message)
 			{
-				std::map<std::string, IncomingMessage> incomingMessageMap =
+				static std::map<std::string, IncomingMessage> incomingMessageMap =
 				{
 					{ "UF", IncomingMessage::FingerUpdate },
 					{ "DL", IncomingMessage::DebugLog }
@@ -68,7 +68,7 @@ namespace feel
 			});
 		}
 	private:
-		SerialConnection connection;
+		SerialDevice device;
 		float fingerAngles[FINGER_TYPE_COUNT] = {};
 	};
 }

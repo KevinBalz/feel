@@ -1,31 +1,32 @@
 #pragma once
+#include "Device.hpp"
+#define ASIO_STANDALONE
 #include "asio.hpp"
 #include <thread>
 #include <queue>
 #include <iostream>
-#include <functional>
 
 namespace feel
 {
-	class SerialConnection;
-	void ReadingThread(SerialConnection& connection);
-	class SerialConnection
+	class SerialDevice;
+	void ReadingThread(SerialDevice& connection);
+	class SerialDevice : public Device
 	{
 	public:
-		SerialConnection() :
+		SerialDevice() :
 			inputs(),
 			io(),
 			serial(io),
 			worker(ReadingThread, std::ref(*this))
 		{}
 
-		~SerialConnection()
+		~SerialDevice()
 		{
 			io.stop();
 			worker.join();
 		}
 
-		void IterateAllMessages(std::function<void(std::string)> callback)
+		void IterateAllMessages(std::function<void(std::string)> callback) override
 		{
 			std::lock_guard<std::mutex> lock(inputMutex);
 			while (!inputs.empty())
@@ -35,13 +36,16 @@ namespace feel
 			}
 		}
 
-		void SendSerialMessage(std::string identifier, std::string payload = "")
+		void TransmitMessage(std::string identifier, std::string payload = "") override
 		{
 			auto str = std::make_shared<std::string>(identifier + payload + "#");
 			asio::async_write(serial, asio::buffer(*str), [str](auto ec, auto s)
 			{
 			});
 		}
+
+		void IterateAllLogs(std::function<void(std::string)> callback) override
+		{}
 
 	private:
 		asio::io_service io;
@@ -50,11 +54,11 @@ namespace feel
 		std::thread worker;
 		std::mutex inputMutex;
 
-		friend void ReadingThread(SerialConnection& connection);
-		friend void ReadSerial(SerialConnection& connection, asio::streambuf& b);
+		friend void ReadingThread(SerialDevice& connection);
+		friend void ReadSerial(SerialDevice& connection, asio::streambuf& b);
 	};
 
-	void ReadSerial(SerialConnection& connection, asio::streambuf& b)
+	void ReadSerial(SerialDevice& connection, asio::streambuf& b)
 	{
 		asio::async_read_until(connection.serial, b, '#', [&](auto ec, auto s)
 		{
@@ -69,7 +73,7 @@ namespace feel
 		});
 	}
 
-	void ReadingThread(SerialConnection& connection)
+	void ReadingThread(SerialDevice& connection)
 	{
 		connection.serial.open("\\\\.\\COM3");
 		connection.serial.set_option(asio::serial_port::baud_rate(115200));
