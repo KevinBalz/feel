@@ -3,14 +3,11 @@ project("feel")
 
 set(CMAKE_CXX_STANDARD 14)
 
-include_directories("dependencies/asio/asio/include")
-include_directories("include")
+add_subdirectory(libfeel)
+add_subdirectory(libfeelc)
+
 set(EXECUTABLE_NAME "hello-feel")
-set(SOURCE_FILES 
-	"src/main.cpp"
-	"include/Finger.hpp" 
-	"include/Feel.hpp" 
-	"include/IncomingMessage.hpp"
-	"include/Device.hpp"
-	"include/SerialDevice.hpp")
+set(SOURCE_FILES "hello-feel/src/main.cpp")
+
 add_executable(${EXECUTABLE_NAME} ${SOURCE_FILES})
+target_link_libraries(${EXECUTABLE_NAME} libfeel)
