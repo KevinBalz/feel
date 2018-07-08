@@ -1,5 +1,5 @@
 #ifdef _WIN32
-define FEEL_API __declspec(dllexport)
+#define FEEL_API __declspec(dllexport)
 #else
 #define FEEL_API
 #endif
