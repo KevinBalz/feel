@@ -3,7 +3,12 @@ version: '0.0.{build}'
 image: Visual Studio 2017
 
 platform:
+  - x86
   - x64
+
+configuration:
+  - Debug
+  - Release
 
 install:
     - git submodule update --init --recursive
@@ -15,5 +20,7 @@ build:
   project: $(APPVEYOR_BUILD_FOLDER)\$(APPVEYOR_PROJECT_NAME).sln
 
 artifacts:
-  - path: '**/*.dll'
-  - path: '**/*.exe'
+  - path: 'libfeelc\$(configuration)\libfeelc.dll'
+    name: libfeelc
+  - path: '$(configuration)\hello-feel.exe'
+    name: hello-feel
