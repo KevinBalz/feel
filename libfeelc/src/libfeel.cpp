@@ -45,7 +45,7 @@ extern "C"
 
     FEEL_API void FEEL_SetDebugLogCallback(feel::Feel* feel, void (*callback)(const char*))
     {
-        feel->SetDebugLogCallback([callback](auto s)
+        feel->SetDebugLogCallback([callback](std::string s)
         {
             callback(s.c_str());
         });
