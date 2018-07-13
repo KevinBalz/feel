@@ -13,3 +13,7 @@ before_build:
 
 build:
   project: $(APPVEYOR_BUILD_FOLDER)\$(APPVEYOR_PROJECT_NAME).sln
+
+artifacts:
+  - path: '**/*.dll'
+  - path: '**/*.exe'
