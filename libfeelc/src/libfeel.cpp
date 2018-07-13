@@ -42,4 +42,12 @@ extern "C"
 	{
 		feel->ParseMessages();
 	}
+
+    FEEL_API void FEEL_SetDebugLogCallback(feel::Feel* feel, void (*callback)(char*, ))
+    {
+        feel->SetDebugLogCallback([callback](auto s)
+        {
+            callback(s.c_str());
+        });
+    }
 }

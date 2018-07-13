@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <map>
 #include <cassert>
+#include <functional>
+#include <string>
 
 namespace feel
 {
@@ -42,6 +44,11 @@ namespace feel
 			return fingerAngles[static_cast<int>(finger)];
 		}
 
+		void SetDebugLogCallback(std::function<void(std::string) > callback)
+		{
+			debugLogCallback = callback;
+		}
+
 		void ParseMessages()
 		{
 			device.IterateAllMessages([&](auto message)
@@ -55,7 +62,7 @@ namespace feel
 				switch (incomingMessageMap[message.substr(0, 2)])
 				{
 					case IncomingMessage::DebugLog:
-						std::cout << "DebugLog: " << message.substr(2) << std::endl;
+						debugLogCallback(message.substr(2));
 						break;
 					case IncomingMessage::FingerUpdate:
 						std::string fingerIdentifier = message.substr(2, 2);
@@ -69,6 +76,10 @@ namespace feel
 		}
 	private:
 		SerialDevice device;
+		std::function<void(std::string)> debugLogCallback = [](auto s)
+        {
+			std::cout << s << std::endl;
+		};
 		float fingerAngles[FINGER_TYPE_COUNT] = {};
 	};
 }
