@@ -9,21 +9,33 @@
 namespace feel
 {
 	class SerialDevice;
-	void ReadingThread(SerialDevice& connection);
+	void ReadingThread(SerialDevice& connection, const char* port);
 	class SerialDevice : public Device
 	{
 	public:
 		SerialDevice() :
 			inputs(),
 			io(),
-			serial(io),
-			worker(ReadingThread, std::ref(*this))
+			serial(io)
 		{}
 
 		~SerialDevice()
 		{
-			io.stop();
-			worker.join();
+			if (connecting || connected)
+			{
+				io.stop();
+				worker.join();
+			}
+		}
+
+		void Connect(const char* deviceName) override
+		{
+			std::lock_guard<std::mutex> lock(connectionStatusMutex);
+		    if (!(connected || connecting))
+			{
+				worker = std::thread(ReadingThread, std::ref(*this), deviceName);
+				connecting = true;
+			}
 		}
 
 		void IterateAllMessages(std::function<void(std::string)> callback) override
@@ -48,13 +60,16 @@ namespace feel
 		{}
 
 	private:
+		bool connected = false;
+		bool connecting = false;
 		asio::io_service io;
 		asio::serial_port serial;
 		std::queue<std::string> inputs;
 		std::thread worker;
+		std::mutex connectionStatusMutex;
 		std::mutex inputMutex;
 
-		friend void ReadingThread(SerialDevice& connection);
+		friend void ReadingThread(SerialDevice& connection, const char* port);
 		friend void ReadSerial(SerialDevice& connection, asio::streambuf& b);
 	};
 
@@ -73,14 +88,33 @@ namespace feel
 		});
 	}
 
-	void ReadingThread(SerialDevice& connection)
+	void ReadingThread(SerialDevice& connection, const char* port)
 	{
-		connection.serial.open("\\\\.\\COM3");
+		//"/dev/cu.usbmodem1421"
+		{
+			std::lock_guard<std::mutex> lock(connection.connectionStatusMutex);
+			try
+			{
+				connection.serial.open(port);
+				connection.connected = true;
+				connection.connecting = false;
+			}
+			catch (const std::exception& e)
+			{
+				std::cout << e.what() << std::endl;
+				connection.connected = false;
+				connection.connecting = false;
+				return;
+			}
+		}
 		connection.serial.set_option(asio::serial_port::baud_rate(115200));
 		connection.serial.set_option(asio::serial_port::character_size(8));
 		asio::streambuf b;
 		ReadSerial(connection, b);
 
 		connection.io.run();
+		std::lock_guard<std::mutex> lock(connection.connectionStatusMutex);
+		connection.connected = false;
+		connection.connecting = false;
 	}
 }

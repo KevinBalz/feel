@@ -13,6 +13,16 @@ extern "C"
 		return new feel::Feel();
 	}
 
+	FEEL_API void FEEL_Connect(feel::Feel* feel, const char* deviceName)
+    {
+        feel->Connect(deviceName);
+    }
+
+    FEEL_API void FEEL_BeginSession(feel::Feel* feel)
+    {
+        feel->BeginSession();
+    }
+
 	FEEL_API void FEEL_Destroy(feel::Feel* feel)
     {
         delete feel;

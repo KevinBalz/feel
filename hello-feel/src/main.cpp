@@ -7,7 +7,9 @@
 int main()
 {
 	feel::Feel feel;
-	
+
+	feel.Connect("/dev/cu.usbmodem1421");
+	feel.BeginSession();
 	feel.SubscribeForFingerUpdates();
 
 	for (;;)

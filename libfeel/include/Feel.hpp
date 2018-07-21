@@ -4,6 +4,7 @@
 #include "IncomingMessage.hpp"
 #include <iomanip>
 #include <map>
+#include <array>
 #include <cassert>
 #include <functional>
 #include <string>
@@ -15,8 +16,17 @@ namespace feel
 	public:
 		Feel()
 		{
-			device.TransmitMessage("BS");
 		}
+
+		void Connect(const char* deviceName)
+		{
+			device.Connect(deviceName);
+		}
+
+		void BeginSession()
+        {
+            device.TransmitMessage("BS");
+        }
 
 		void EndSession()
 		{
@@ -80,6 +90,6 @@ namespace feel
         {
 			std::cout << s << std::endl;
 		};
-		float fingerAngles[FINGER_TYPE_COUNT] = {};
+		std::array<float, FINGER_TYPE_COUNT> fingerAngles = {};
 	};
 }
