@@ -5,6 +5,8 @@
 #include <thread>
 #include <queue>
 #include <iostream>
+#include <Windows.h>
+#include <winreg.h>
 
 namespace feel
 {
@@ -37,6 +39,26 @@ namespace feel
 				connecting = true;
 			}
 		}
+
+        void GetAvailableDevices(std::vector<std::string>& devices) override
+        {
+            HKEY key;
+            RegOpenKey(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", &key);
+            char valueNameBuffer[1024];
+            char valueBuffer[1024];
+            LSTATUS status = ERROR_SUCCESS;
+            DWORD index = 0;
+            while (true)
+            {
+                DWORD bufferSize = 1024;
+                DWORD valueSize = 1024;
+                status = RegEnumValue(key, index, valueNameBuffer, &bufferSize, NULL, NULL, NULL, NULL);
+                if (status == ERROR_NO_MORE_ITEMS) break;
+                status = RegGetValue(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", valueNameBuffer, RRF_RT_REG_SZ, NULL, valueBuffer, &valueSize);
+                devices.emplace_back(valueBuffer);
+                index++;
+            }
+        }
 
 		void IterateAllMessages(std::function<void(std::string)> callback) override
 		{

@@ -23,6 +23,18 @@ namespace feel
 			device.Connect(deviceName);
 		}
 
+        std::vector<std::string> GetAvailableDevices()
+        {
+            std::vector<std::string> devices;
+            device.GetAvailableDevices(devices);
+            return std::move(devices);
+        }
+
+        void GetAvailableDevices(std::vector<std::string>& devices)
+        {
+            device.GetAvailableDevices(devices);
+        }
+
 		void BeginSession()
         {
             device.TransmitMessage("BS");

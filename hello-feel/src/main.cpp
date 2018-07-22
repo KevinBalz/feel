@@ -8,7 +8,20 @@ int main()
 {
 	feel::Feel feel;
 
-	feel.Connect("/dev/cu.usbmodem1421");
+    auto devices = feel.GetAvailableDevices();
+    if (devices.empty())
+    {
+        std::cout << "No device found" << std::endl;
+        std::string s;
+        std::cin >> s;
+        return 0;
+    }
+    for (auto device : devices)
+    {
+        std::cout << device << std::endl;
+    }
+    
+	feel.Connect(devices[0].c_str());
 	feel.BeginSession();
 	feel.SubscribeForFingerUpdates();
 

@@ -5,9 +5,17 @@
 #endif
 #include "Feel.hpp"
 #include "Finger.hpp"
+#include <memory>
 
 extern "C"
 {
+    typedef intptr_t FeelStringArrayHandle;
+    struct FeelStringArray
+    {
+        char** strings;
+        int size;
+    };
+
 	FEEL_API feel::Feel* FEEL_CreateNew()
 	{
 		return new feel::Feel();
@@ -16,6 +24,33 @@ extern "C"
 	FEEL_API void FEEL_Connect(feel::Feel* feel, const char* deviceName)
     {
         feel->Connect(deviceName);
+    }
+
+    FEEL_API void FEEL_GetAvailableDevices(feel::Feel* feel, FeelStringArrayHandle* handle, char*** devices, int* deviceCount)
+    {
+        FeelStringArray* arr = new FeelStringArray();
+        auto deviceNames = feel->GetAvailableDevices();
+        arr->size = deviceNames.size();
+        arr->strings = new char*[arr->size];
+        for (int i = 0; i < arr->size; i++)
+        {
+            arr->strings[i] = new char[deviceNames[i].length() + 1];
+            strcpy(arr->strings[i], deviceNames[i].c_str());
+        }
+
+        *handle = reinterpret_cast<FeelStringArrayHandle>(arr);
+        *devices = arr->strings;
+        *deviceCount = arr->size;
+    }
+
+    FEEL_API void FEEL_ReleaseFeelStringArrayHandle(FeelStringArrayHandle* handle)
+    {
+        auto arr = reinterpret_cast<FeelStringArray*>(handle);
+        for (int i = 0; i < arr->size; i++)
+        {
+            delete arr->strings[i];
+        }
+        delete arr;
     }
 
     FEEL_API void FEEL_BeginSession(feel::Feel* feel)
