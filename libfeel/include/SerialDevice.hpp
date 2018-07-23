@@ -42,11 +42,12 @@ namespace feel
 
         void GetAvailableDevices(std::vector<std::string>& devices) override
         {
+            LSTATUS status;
             HKEY key;
-            RegOpenKey(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", &key);
+            status = RegOpenKey(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", &key);
+            if (status == ERROR_FILE_NOT_FOUND) return;
             char valueNameBuffer[1024];
             char valueBuffer[1024];
-            LSTATUS status = ERROR_SUCCESS;
             DWORD index = 0;
             while (true)
             {
