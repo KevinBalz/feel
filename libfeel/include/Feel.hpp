@@ -7,21 +7,35 @@
 #include <array>
 #include <cassert>
 #include <functional>
+#include <algorithm>
 #include <string>
+#include <limits>
 
 namespace feel
 {
-	class Feel
-	{
-	public:
-		Feel()
-		{
-		}
+    struct FingerCalibrationData
+    {
+        float min;
+        float max;
+    };
 
-		void Connect(const char* deviceName)
-		{
-			device.Connect(deviceName);
-		}
+    struct CalibrationData
+    {
+        std::array<FingerCalibrationData, FINGER_TYPE_COUNT> angles;
+    };
+    
+    class Feel
+    {
+    public:
+        Feel()
+        {
+            calibrationData.angles.fill(FingerCalibrationData{0, 180});
+        }
+
+        void Connect(const char* deviceName)
+        {
+            device.Connect(deviceName);
+        }
 
         void Disconnect()
         {
@@ -38,6 +52,12 @@ namespace feel
         void GetAvailableDevices(std::vector<std::string>& devices)
         {
             device.GetAvailableDevices(devices);
+        }
+
+        void StartNormalization()
+        {
+            calibrationData.angles.fill(FingerCalibrationData{ std::numeric_limits<float>::max() , std::numeric_limits<float>::min() });
+            device.TransmitMessage("IN");
         }
 
 		void BeginSession()
@@ -58,6 +78,8 @@ namespace feel
 		void SetFingerAngle(Finger finger, float angle)
 		{
 			int fingerNumber = static_cast<int>(finger);
+            auto data = calibrationData.angles[fingerNumber];
+            angle = angle / 180 * data.max + data.min;
 			std::stringstream stream;
 			stream
 				<< std::setfill('0') << std::setw(2)
@@ -66,9 +88,17 @@ namespace feel
 			device.TransmitMessage("WF", stream.str());
 		}
 
+        void SetCalibrationData(CalibrationData& data)
+        {
+            calibrationData = data;
+        }
+
 		float GetFingerAngle(Finger finger)
 		{
-			return fingerAngles[static_cast<int>(finger)];
+            auto angle = fingerAngles[static_cast<int>(finger)];
+            auto data = calibrationData.angles[static_cast<int>(finger)];
+            angle = (angle - data.min) / data.max * 180;
+            return angle;
 		}
 
 		void SetDebugLogCallback(std::function<void(std::string) > callback)
@@ -83,7 +113,8 @@ namespace feel
 				static std::map<std::string, IncomingMessage> incomingMessageMap =
 				{
 					{ "UF", IncomingMessage::FingerUpdate },
-					{ "DL", IncomingMessage::DebugLog }
+					{ "DL", IncomingMessage::DebugLog },
+                    { "NI", IncomingMessage::NormalizationData }
 				};
 				if (message.length() < 2) return;
 				switch (incomingMessageMap[message.substr(0, 2)])
@@ -92,12 +123,28 @@ namespace feel
 						debugLogCallback(message.substr(2));
 						break;
 					case IncomingMessage::FingerUpdate:
-						std::string fingerIdentifier = message.substr(2, 2);
-						std::string fingerAngle = message.substr(4);
-						std::cout << "Finger: " << fingerIdentifier << " Angle: " << fingerAngle << std::endl;
-						int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
-						fingerAngles[fingerIndex] = std::stof(fingerAngle);
-						break;
+                    {
+                        std::string fingerIdentifier = message.substr(2, 2);
+                        std::string fingerAngle = message.substr(4);
+                        std::cout << "Finger: " << fingerIdentifier << " Angle: " << fingerAngle << std::endl;
+                        int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
+                        fingerAngles[fingerIndex] = std::stof(fingerAngle);
+                    }
+                    break;
+                    case IncomingMessage::NormalizationData:
+                    {
+                        std::string fingerIdentifier = message.substr(2, 2);
+                        std::string realAngle = message.substr(4, 3);
+                        std::string fingerAngle = message.substr(7);
+                        std::cout << "Init Finger: " << fingerIdentifier << " Real Angle: " << realAngle << " Angle: " << fingerAngle << std::endl;
+                        int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
+                        float angle = std::stof(fingerAngle);
+                        auto data = calibrationData.angles[fingerIndex];
+                        data.min = std::min(data.min, angle);
+                        data.max = std::max(data.max, angle);
+                        calibrationData.angles[fingerIndex] = data;
+                    }
+                    break;
 				}
 			});
 		}
@@ -108,5 +155,6 @@ namespace feel
 			std::cout << s << std::endl;
 		};
 		std::array<float, FINGER_TYPE_COUNT> fingerAngles = {};
+        CalibrationData calibrationData;
 	};
 }

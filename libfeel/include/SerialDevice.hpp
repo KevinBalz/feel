@@ -45,7 +45,7 @@ namespace feel
 		{
 		    if (status == DeviceStatus::Disconnected)
 			{
-                status == DeviceStatus::Connecting;
+                status = DeviceStatus::Connecting;
                 try
                 {
                     serial.open(deviceName);

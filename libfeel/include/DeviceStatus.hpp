@@ -6,8 +6,6 @@ namespace feel
     {
         Disconnected,
         Connecting,
-        Connected,
-        Calibration,
-        Operating
+        Connected
     };
 }

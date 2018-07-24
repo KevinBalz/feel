@@ -5,6 +5,7 @@ namespace feel
     enum IncomingMessage
     {
         FingerUpdate,
-		DebugLog
+        DebugLog,
+        NormalizationData
     };
 }
