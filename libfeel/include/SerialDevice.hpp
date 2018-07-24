@@ -5,47 +5,83 @@
 #include <thread>
 #include <queue>
 #include <iostream>
+#include <atomic>
 #include <Windows.h>
 #include <winreg.h>
 
 namespace feel
 {
 	class SerialDevice;
-	void ReadingThread(SerialDevice& connection, const char* port);
+	void ReadingThread(SerialDevice& connection);
+    void WritingThread(SerialDevice& connection);
 	class SerialDevice : public Device
 	{
 	public:
 		SerialDevice() :
 			inputs(),
 			io(),
-			serial(io)
+			serial(io),
+            status(DeviceStatus::Disconnected)
 		{}
 
 		~SerialDevice()
 		{
-			if (connecting || connected)
-			{
-				io.stop();
-				worker.join();
-			}
+            if (writeWorker.joinable())
+            {
+                writeWorker.join();
+            }
+            if (readWorker.joinable())
+            {
+                readWorker.join();
+            }
 		}
+
+        DeviceStatus GetStatus() override
+        {
+            return status;
+        }
 
 		void Connect(const char* deviceName) override
 		{
-			std::lock_guard<std::mutex> lock(connectionStatusMutex);
-		    if (!(connected || connecting))
+		    if (status == DeviceStatus::Disconnected)
 			{
-				worker = std::thread(ReadingThread, std::ref(*this), deviceName);
-				connecting = true;
+                status == DeviceStatus::Connecting;
+                try
+                {
+                    serial.open(deviceName);
+                    serial.set_option(asio::serial_port::baud_rate(115200));
+                    serial.set_option(asio::serial_port::character_size(8));
+                    status = DeviceStatus::Connected;
+                }
+                catch (const std::exception& e)
+                {
+                    std::cout << e.what() << std::endl;
+                    status = DeviceStatus::Disconnected;
+                    outputCondition.notify_one();
+                    return;
+                }
+                readWorker = std::thread(ReadingThread, std::ref(*this));
+                writeWorker = std::thread(WritingThread, std::ref(*this));
 			}
 		}
 
+        void Disconnect() override
+        {
+            if (status != DeviceStatus::Disconnected)
+            {
+                status = DeviceStatus::Disconnected;
+                outputCondition.notify_one();
+                writeWorker.join();
+                serial.cancel();
+            }
+        }
+
         void GetAvailableDevices(std::vector<std::string>& devices) override
         {
-            LSTATUS status;
+            LSTATUS lstatus;
             HKEY key;
-            status = RegOpenKey(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", &key);
-            if (status == ERROR_FILE_NOT_FOUND) return;
+            lstatus = RegOpenKey(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", &key);
+            if (lstatus == ERROR_FILE_NOT_FOUND) return;
             char valueNameBuffer[1024];
             char valueBuffer[1024];
             DWORD index = 0;
@@ -53,9 +89,9 @@ namespace feel
             {
                 DWORD bufferSize = 1024;
                 DWORD valueSize = 1024;
-                status = RegEnumValue(key, index, valueNameBuffer, &bufferSize, NULL, NULL, NULL, NULL);
-                if (status == ERROR_NO_MORE_ITEMS) break;
-                status = RegGetValue(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", valueNameBuffer, RRF_RT_REG_SZ, NULL, valueBuffer, &valueSize);
+                lstatus = RegEnumValue(key, index, valueNameBuffer, &bufferSize, NULL, NULL, NULL, NULL);
+                if (lstatus == ERROR_NO_MORE_ITEMS) break;
+                lstatus = RegGetValue(HKEY_LOCAL_MACHINE, "HARDWARE\\DEVICEMAP\\SERIALCOMM", valueNameBuffer, RRF_RT_REG_SZ, NULL, valueBuffer, &valueSize);
                 devices.emplace_back(valueBuffer);
                 index++;
             }
@@ -73,33 +109,37 @@ namespace feel
 
 		void TransmitMessage(std::string identifier, std::string payload = "") override
 		{
-			auto str = std::make_shared<std::string>(identifier + payload + "#");
-			asio::async_write(serial, asio::buffer(*str), [str](auto ec, auto s)
-			{
-			});
+			auto str = identifier + payload + "#";
+            std::lock_guard<std::mutex> lock(outputMutex);
+            outputs.push(str);
+            outputCondition.notify_one();
 		}
 
 		void IterateAllLogs(std::function<void(std::string)> callback) override
 		{}
 
 	private:
-		bool connected = false;
-		bool connecting = false;
+        DeviceStatus status;
 		asio::io_service io;
 		asio::serial_port serial;
 		std::queue<std::string> inputs;
-		std::thread worker;
-		std::mutex connectionStatusMutex;
+        std::queue<std::string> outputs;
+		std::thread readWorker;
+        std::thread writeWorker;
 		std::mutex inputMutex;
+        std::mutex outputMutex;
+        std::condition_variable outputCondition;
 
-		friend void ReadingThread(SerialDevice& connection, const char* port);
+		friend void ReadingThread(SerialDevice& connection);
 		friend void ReadSerial(SerialDevice& connection, asio::streambuf& b);
+        friend void WritingThread(SerialDevice& connection);
 	};
 
 	void ReadSerial(SerialDevice& connection, asio::streambuf& b)
 	{
 		asio::async_read_until(connection.serial, b, '#', [&](auto ec, auto s)
 		{
+            if (!!ec) return;
 			std::string message
 			{
 				asio::buffers_begin(b.data()), asio::buffers_begin(b.data()) + s - 1
@@ -111,33 +151,33 @@ namespace feel
 		});
 	}
 
-	void ReadingThread(SerialDevice& connection, const char* port)
+	void ReadingThread(SerialDevice& connection)
 	{
-		//"/dev/cu.usbmodem1421"
-		{
-			std::lock_guard<std::mutex> lock(connection.connectionStatusMutex);
-			try
-			{
-				connection.serial.open(port);
-				connection.connected = true;
-				connection.connecting = false;
-			}
-			catch (const std::exception& e)
-			{
-				std::cout << e.what() << std::endl;
-				connection.connected = false;
-				connection.connecting = false;
-				return;
-			}
-		}
-		connection.serial.set_option(asio::serial_port::baud_rate(115200));
-		connection.serial.set_option(asio::serial_port::character_size(8));
 		asio::streambuf b;
 		ReadSerial(connection, b);
 
 		connection.io.run();
-		std::lock_guard<std::mutex> lock(connection.connectionStatusMutex);
-		connection.connected = false;
-		connection.connecting = false;
+        connection.status = DeviceStatus::Disconnected;
 	}
+
+    void WritingThread(SerialDevice& connection)
+    {
+        while (true)
+        {
+            std::unique_lock<std::mutex> lock(connection.outputMutex);
+            connection.outputCondition.wait(lock, [&]
+            {
+                return !connection.outputs.empty() || connection.status == DeviceStatus::Disconnected;
+            });
+            if (connection.outputs.empty() && connection.status == DeviceStatus::Disconnected)
+            {
+                break;
+            }
+
+            std::string message = connection.outputs.front();
+            connection.outputs.pop();
+            lock.unlock();
+            asio::write(connection.serial, asio::buffer(message));
+        }
+    }
 }

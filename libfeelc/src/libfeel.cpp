@@ -26,6 +26,11 @@ extern "C"
         feel->Connect(deviceName);
     }
 
+    FEEL_API void FEEL_Disconnect(feel::Feel* feel)
+    {
+        feel->Disconnect();
+    }
+
     FEEL_API void FEEL_GetAvailableDevices(feel::Feel* feel, FeelStringArrayHandle* handle, char*** devices, int* deviceCount)
     {
         FeelStringArray* arr = new FeelStringArray();

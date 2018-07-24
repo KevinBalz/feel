@@ -40,6 +40,7 @@ int main()
 	}
 
 	feel.EndSession();
+    feel.Disconnect();
 
     return 0;
 }

@@ -23,6 +23,11 @@ namespace feel
 			device.Connect(deviceName);
 		}
 
+        void Disconnect()
+        {
+            device.Disconnect();
+        }
+
         std::vector<std::string> GetAvailableDevices()
         {
             std::vector<std::string> devices;
