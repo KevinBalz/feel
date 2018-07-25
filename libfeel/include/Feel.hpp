@@ -27,52 +27,62 @@ namespace feel
     class Feel
     {
     public:
-        Feel()
+        Feel() : Feel(new SerialDevice())
         {
-            calibrationData.angles.fill(FingerCalibrationData{0, 180});
+        }
+
+        Feel(Device* device)
+        {
+            calibrationData.angles.fill(FingerCalibrationData{ 0, 180 });
+            this->device = device;
+        }
+
+        ~Feel()
+        {
+            delete device;
         }
 
         void Connect(const char* deviceName)
         {
-            device.Connect(deviceName);
+            device->Connect(deviceName);
         }
 
         void Disconnect()
         {
-            device.Disconnect();
+            device->Disconnect();
         }
 
         std::vector<std::string> GetAvailableDevices()
         {
             std::vector<std::string> devices;
-            device.GetAvailableDevices(devices);
+            device->GetAvailableDevices(devices);
             return std::move(devices);
         }
 
         void GetAvailableDevices(std::vector<std::string>& devices)
         {
-            device.GetAvailableDevices(devices);
+            device->GetAvailableDevices(devices);
         }
 
         void StartNormalization()
         {
             calibrationData.angles.fill(FingerCalibrationData{ std::numeric_limits<float>::max() , std::numeric_limits<float>::min() });
-            device.TransmitMessage("IN");
+            device->TransmitMessage("IN");
         }
 
 		void BeginSession()
         {
-            device.TransmitMessage("BS");
+            device->TransmitMessage("BS");
         }
 
 		void EndSession()
 		{
-			device.TransmitMessage("ES");
+			device->TransmitMessage("ES");
 		}
 
 		void SubscribeForFingerUpdates(bool active = true)
 		{
-			device.TransmitMessage("SS", active ? "1" : "0");
+			device->TransmitMessage("SF", active ? "1" : "0");
 		}
 
 		void SetFingerAngle(Finger finger, float angle, int force)
@@ -85,8 +95,10 @@ namespace feel
 			stream
 				<< std::setfill('0') << std::setw(2)
 				<< std::hex << fingerNumber
-				<< std::dec << force << angle;
-			device.TransmitMessage("WF", stream.str());
+				<< std::dec << std::setw(2)
+                << force 
+                << angle;
+			device->TransmitMessage("WF", stream.str());
 		}
 
         void SetCalibrationData(CalibrationData& data)
@@ -109,7 +121,7 @@ namespace feel
 
 		void ParseMessages()
 		{
-			device.IterateAllMessages([&](auto message)
+			device->IterateAllMessages([&](auto message)
 			{
 				static std::map<std::string, IncomingMessage> incomingMessageMap =
 				{
@@ -150,12 +162,12 @@ namespace feel
 			});
 		}
 	private:
-		SerialDevice device;
+        Device* device = nullptr;
 		std::function<void(std::string)> debugLogCallback = [](auto s)
         {
 			std::cout << s << std::endl;
 		};
-		std::array<float, FINGER_TYPE_COUNT> fingerAngles = {};
+		std::array<float, FINGER_TYPE_COUNT> fingerAngles = {0};
         CalibrationData calibrationData;
 	};
 }
