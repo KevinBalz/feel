@@ -28,8 +28,8 @@ int main()
 	for (;;)
 	{
 		std::cout << "PP" << std::endl;
-		feel.SetFingerAngle(feel::Finger::HAND_0_RING_1, 123.4f);
-		feel.SetFingerAngle(feel::Finger::HAND_0_RING_0, 999);
+		feel.SetFingerAngle(feel::Finger::HAND_0_RING_1, 123.4f, 33);
+		feel.SetFingerAngle(feel::Finger::HAND_0_RING_0, 999, 45);
 		feel.ParseMessages();
 
 		for (int i = 0; i < feel::FINGER_TYPE_COUNT; i++)

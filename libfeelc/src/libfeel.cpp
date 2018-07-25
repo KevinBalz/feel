@@ -58,6 +58,11 @@ extern "C"
         delete arr;
     }
 
+    FEEL_API void FEEL_StartNormalization(feel::Feel* feel)
+    {
+        feel->StartNormalization();
+    }
+
     FEEL_API void FEEL_BeginSession(feel::Feel* feel)
     {
         feel->BeginSession();
@@ -78,9 +83,9 @@ extern "C"
         feel->SubscribeForFingerUpdates(active);
     }
 
-    FEEL_API void FEEL_SetFingerAngle(feel::Feel* feel, int finger, float angle)
+    FEEL_API void FEEL_SetFingerAngle(feel::Feel* feel, int finger, float angle, int force)
     {
-        feel->SetFingerAngle(static_cast<feel::Finger>(finger), angle);
+        feel->SetFingerAngle(static_cast<feel::Finger>(finger), angle, force);
     }
 
     FEEL_API float FEEL_GetFingerAngle(feel::Feel* feel, int finger)

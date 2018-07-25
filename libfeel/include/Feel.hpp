@@ -75,16 +75,17 @@ namespace feel
 			device.TransmitMessage("SS", active ? "1" : "0");
 		}
 
-		void SetFingerAngle(Finger finger, float angle)
+		void SetFingerAngle(Finger finger, float angle, int force)
 		{
 			int fingerNumber = static_cast<int>(finger);
             auto data = calibrationData.angles[fingerNumber];
             angle = angle / 180 * data.max + data.min;
+            force = 99 - force;
 			std::stringstream stream;
 			stream
 				<< std::setfill('0') << std::setw(2)
 				<< std::hex << fingerNumber
-				<< std::dec << angle;
+				<< std::dec << force << angle;
 			device.TransmitMessage("WF", stream.str());
 		}
 
