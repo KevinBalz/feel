@@ -157,7 +157,6 @@ namespace feel
 		ReadSerial(connection, b);
 
 		connection.io.run();
-        connection.status = DeviceStatus::Disconnected;
 	}
 
     void WritingThread(SerialDevice& connection)

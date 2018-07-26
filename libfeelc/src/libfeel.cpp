@@ -21,6 +21,11 @@ extern "C"
 		return new feel::Feel();
 	}
 
+    FEEL_API feel::Feel* FEEL_CreateNewWithDevice(feel::Device* device)
+    {
+        return new feel::Feel(device);
+    }
+
 	FEEL_API void FEEL_Connect(feel::Feel* feel, const char* deviceName)
     {
         feel->Connect(deviceName);

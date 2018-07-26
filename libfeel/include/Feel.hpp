@@ -2,6 +2,8 @@
 #include "SerialDevice.hpp"
 #include "Finger.hpp"
 #include "IncomingMessage.hpp"
+#include "FeelStatus.hpp"
+#include "CalibrationData.hpp"
 #include <iomanip>
 #include <map>
 #include <array>
@@ -13,29 +15,19 @@
 
 namespace feel
 {
-    struct FingerCalibrationData
-    {
-        float min;
-        float max;
-    };
-
-    struct CalibrationData
-    {
-        std::array<FingerCalibrationData, FINGER_TYPE_COUNT> angles;
-    };
     
     class Feel
     {
-    public:
-        Feel() : Feel(new SerialDevice())
-        {
-        }
-
+    public:       
         Feel(Device* device)
         {
             calibrationData.angles.fill(FingerCalibrationData{ 0, 180 });
             this->device = device;
         }
+
+        Feel() : Feel(new SerialDevice())
+        {}
+
 
         ~Feel()
         {
@@ -68,6 +60,7 @@ namespace feel
         {
             calibrationData.angles.fill(FingerCalibrationData{ std::numeric_limits<float>::max() , std::numeric_limits<float>::min() });
             device->TransmitMessage("IN");
+            status = FeelStatus::Normalization;
         }
 
 		void BeginSession()
@@ -101,6 +94,15 @@ namespace feel
 			device->TransmitMessage("WF", stream.str());
 		}
 
+        void ReleaseFinger(Finger finger)
+        {
+            std::stringstream stream;
+            stream
+                << std::setfill('0') << std::setw(2)
+                << std::hex << static_cast<int>(finger);
+            device->TransmitMessage("RE", stream.str());
+        }
+
         void SetCalibrationData(CalibrationData& data)
         {
             calibrationData = data;
@@ -119,6 +121,31 @@ namespace feel
 			debugLogCallback = callback;
 		}
 
+        FeelStatus GetStatus()
+        {
+            switch (status)
+            {
+                case FeelStatus::DeviceDisconnected:
+                case FeelStatus::DeviceConnecting:
+                case FeelStatus::DeviceConnected:
+                {
+                    switch (device->GetStatus())
+                    {
+                        case DeviceStatus::Disconnected:
+                            status = FeelStatus::DeviceDisconnected;
+                            break;
+                        case DeviceStatus::Connecting:
+                            status = FeelStatus::DeviceConnecting;
+                            break;
+                        case DeviceStatus::Connected:
+                            status = FeelStatus::DeviceConnected;
+                            break;
+                    }
+                }
+                default: return status;
+            }
+        }
+
 		void ParseMessages()
 		{
 			device->IterateAllMessages([&](auto message)
@@ -127,14 +154,16 @@ namespace feel
 				{
 					{ "UF", IncomingMessage::FingerUpdate },
 					{ "DL", IncomingMessage::DebugLog },
-                    { "NI", IncomingMessage::NormalizationData }
+                    { "NI", IncomingMessage::NormalizationData },
+                    { "EN", IncomingMessage::EndNormalization }
 				};
 				if (message.length() < 2) return;
 				switch (incomingMessageMap[message.substr(0, 2)])
 				{
 					case IncomingMessage::DebugLog:
-						debugLogCallback(message.substr(2));
-						break;
+                    {
+                        debugLogCallback(message.substr(2));
+                    } break;
 					case IncomingMessage::FingerUpdate:
                     {
                         std::string fingerIdentifier = message.substr(2, 2);
@@ -142,8 +171,7 @@ namespace feel
                         std::cout << "Finger: " << fingerIdentifier << " Angle: " << fingerAngle << std::endl;
                         int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
                         fingerAngles[fingerIndex] = std::stof(fingerAngle);
-                    }
-                    break;
+                    } break;
                     case IncomingMessage::NormalizationData:
                     {
                         std::string fingerIdentifier = message.substr(2, 2);
@@ -156,12 +184,19 @@ namespace feel
                         data.min = std::min(data.min, angle);
                         data.max = std::max(data.max, angle);
                         calibrationData.angles[fingerIndex] = data;
-                    }
-                    break;
+                    } break;
+                    case IncomingMessage::EndNormalization:
+                    {
+                        if (status == FeelStatus::Normalization)
+                        {
+                            status = FeelStatus::DeviceConnected;
+                        }
+                    } break;
 				}
 			});
 		}
 	private:
+        FeelStatus status;
         Device* device = nullptr;
 		std::function<void(std::string)> debugLogCallback = [](auto s)
         {

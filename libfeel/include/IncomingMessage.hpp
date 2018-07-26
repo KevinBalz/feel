@@ -6,6 +6,7 @@ namespace feel
     {
         FingerUpdate,
         DebugLog,
-        NormalizationData
+        NormalizationData,
+        EndNormalization
     };
 }
