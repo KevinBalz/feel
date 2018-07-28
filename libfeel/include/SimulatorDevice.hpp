@@ -59,11 +59,12 @@ namespace feel
             outputs.push(str);
         }
 
-        void IterateAllMessages(std::function<void(std::string)> callback) override
+        void IterateAllMessages(std::function<void(const std::string&)> callback) override
         {
             std::lock_guard<std::mutex> lock(inputMutex);
             while (!inputs.empty())
             {
+
                 callback(inputs.front());
                 inputs.pop();
             }
@@ -112,8 +113,7 @@ namespace feel
                     std::lock_guard<std::mutex> lock(simulator.outputMutex);
                     while (!simulator.outputs.empty())
                     {
-                        auto message = simulator.outputs.front();
-                        simulator.outputs.pop();
+                        std::string& message = simulator.outputs.front();
 
                         auto messageIdentifier = message.substr(0, 2);
                         if (messageIdentifier == "IN")
@@ -162,8 +162,10 @@ namespace feel
                         else
                         {
                             std::lock_guard<std::mutex> lock(simulator.inputMutex);
-                            simulator.inputs.push("DLUnknown Message: " + simulator.outputs.front());
-                        }  
+                            simulator.inputs.push("DLUnknown Message: " + message);
+                        }
+
+                        simulator.outputs.pop();
                     }
                 }
 

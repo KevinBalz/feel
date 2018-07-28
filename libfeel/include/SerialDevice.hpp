@@ -97,7 +97,7 @@ namespace feel
             }
         }
 
-		void IterateAllMessages(std::function<void(std::string)> callback) override
+		void IterateAllMessages(std::function<void(const std::string&)> callback) override
 		{
 			std::lock_guard<std::mutex> lock(inputMutex);
 			while (!inputs.empty())
