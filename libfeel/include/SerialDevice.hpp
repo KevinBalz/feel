@@ -54,9 +54,9 @@ namespace feel
                 {
                     std::cout << e.what() << std::endl;
                     status = DeviceStatus::Disconnected;
-                    outputCondition.notify_one();
                     return;
                 }
+                outputFlag.test_and_set();
                 readWorker = std::thread(&SerialDevice::ReadingThread, this);
                 writeWorker = std::thread(&SerialDevice::WritingThread, this);
 			}
@@ -67,6 +67,7 @@ namespace feel
             if (status != DeviceStatus::Disconnected)
             {
                 status = DeviceStatus::Disconnected;
+                outputFlag.clear();
                 outputCondition.notify_one();
                 writeWorker.join();
                 serial.cancel();
@@ -107,8 +108,10 @@ namespace feel
 		void TransmitMessage(std::string identifier, std::string payload = "") override
 		{
 			auto str = identifier + payload + "#";
-            std::lock_guard<std::mutex> lock(outputMutex);
-            outputs.push(str);
+            {
+                std::lock_guard<std::mutex> lock(outputMutex);
+                outputs.push(str);
+            }
             outputCondition.notify_one();
 		}
 
@@ -125,6 +128,7 @@ namespace feel
         std::thread writeWorker;
 		std::mutex inputMutex;
         std::mutex outputMutex;
+        std::atomic_flag outputFlag;
         std::condition_variable outputCondition;
 
         void ReadSerial(asio::streambuf& b)
@@ -153,14 +157,15 @@ namespace feel
 
         void WritingThread()
         {
+            bool stopThread = false;
             while (true)
             {
                 std::unique_lock<std::mutex> lock(outputMutex);
                 outputCondition.wait(lock, [&]
                 {
-                    return !outputs.empty() || status == DeviceStatus::Disconnected;
+                    return !outputs.empty() || stopThread || (stopThread = !outputFlag.test_and_set());
                 });
-                if (outputs.empty() && status == DeviceStatus::Disconnected)
+                if (outputs.empty() && stopThread)
                 {
                     break;
                 }

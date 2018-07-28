@@ -9,6 +9,7 @@
 #include <array>
 #include <iomanip>
 #include <string>
+#include <atomic>
 
 namespace feel
 {
@@ -37,6 +38,7 @@ namespace feel
         void Connect(const char* deviceName) override
         {
             status = DeviceStatus::Connecting;
+            threadFlag.test_and_set();
             messageGenerator = std::thread(&SimulatorDevice::MessageGenerator, this);
             status = DeviceStatus::Connected;
         }
@@ -44,6 +46,7 @@ namespace feel
         void Disconnect()
         {
             status = DeviceStatus::Disconnected;
+            threadFlag.clear();
             messageGenerator.join();
         }
 
@@ -73,12 +76,13 @@ namespace feel
         void IterateAllLogs(std::function<void(std::string)> callback) override
         {}
     private:
-        DeviceStatus status;    
+        DeviceStatus status;
         std::queue<std::string> inputs;
         std::queue<std::string> outputs;
         std::thread messageGenerator;
         std::mutex inputMutex;
         std::mutex outputMutex;
+        std::atomic_flag threadFlag;
 
         void MessageGenerator()
         {
@@ -101,7 +105,7 @@ namespace feel
                 FingerCalibrationData{ 111, 424 },
                 FingerCalibrationData{ 0, 111 }
             };
-            while (status != DeviceStatus::Disconnected)
+            while (threadFlag.test_and_set())
             {
                 if (inNormalization)
                 {
