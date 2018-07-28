@@ -37,7 +37,7 @@ namespace feel
         void Connect(const char* deviceName) override
         {
             status = DeviceStatus::Connecting;
-            messageGenerator = std::thread(MessageGenerator, std::ref(*this));
+            messageGenerator = std::thread(&SimulatorDevice::MessageGenerator, this);
             status = DeviceStatus::Connected;
         }
 
@@ -80,7 +80,7 @@ namespace feel
         std::mutex inputMutex;
         std::mutex outputMutex;
 
-        static void MessageGenerator(SimulatorDevice& simulator)
+        void MessageGenerator()
         {
             bool inNormalization = false;
             bool inSession = false;
@@ -101,19 +101,19 @@ namespace feel
                 FingerCalibrationData{ 111, 424 },
                 FingerCalibrationData{ 0, 111 }
             };
-            while (simulator.status != DeviceStatus::Disconnected)
+            while (status != DeviceStatus::Disconnected)
             {
                 if (inNormalization)
                 {
-                    std::lock_guard<std::mutex> lock(simulator.inputMutex);
-                    simulator.inputs.push("EN");
+                    std::lock_guard<std::mutex> lock(inputMutex);
+                    inputs.push("EN");
                     inNormalization = false;
                 }
                 {
-                    std::lock_guard<std::mutex> lock(simulator.outputMutex);
-                    while (!simulator.outputs.empty())
+                    std::lock_guard<std::mutex> lock(outputMutex);
+                    while (!outputs.empty())
                     {
-                        std::string& message = simulator.outputs.front();
+                        std::string& message = outputs.front();
 
                         auto messageIdentifier = message.substr(0, 2);
                         if (messageIdentifier == "IN")
@@ -122,7 +122,7 @@ namespace feel
                             inSession = false;
                             subscribed = false;
 
-                            std::lock_guard<std::mutex> lock(simulator.inputMutex);
+                            std::lock_guard<std::mutex> lock(inputMutex);
                             for (int i = 0; i < feel::FINGER_TYPE_COUNT; i++)
                             {
                                 auto data = calibrationData.angles[i];
@@ -136,7 +136,7 @@ namespace feel
                                         << std::dec << std::setw(3)
                                         << a
                                         << a / 180.0f * data.max + data.min;
-                                    simulator.inputs.push(stream.str());
+                                    inputs.push(stream.str());
                                 }
                                 angles[i] = data.min;
                             }
@@ -161,17 +161,17 @@ namespace feel
                         }
                         else
                         {
-                            std::lock_guard<std::mutex> lock(simulator.inputMutex);
-                            simulator.inputs.push("DLUnknown Message: " + message);
+                            std::lock_guard<std::mutex> lock(inputMutex);
+                            inputs.push("DLUnknown Message: " + message);
                         }
 
-                        simulator.outputs.pop();
+                        outputs.pop();
                     }
                 }
 
                 if (subscribed)
                 {
-                    std::lock_guard<std::mutex> lock(simulator.inputMutex);
+                    std::lock_guard<std::mutex> lock(inputMutex);
                     for (int i = 0; i < feel::FINGER_TYPE_COUNT; i++)
                     {
                         auto data = calibrationData.angles[i];
@@ -181,7 +181,7 @@ namespace feel
                             << std::setfill('0') << std::setw(2)
                             << std::hex << i
                             << std::dec << angles[i];
-                        simulator.inputs.push(stream.str());
+                        inputs.push(stream.str());
                     }
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000/60));
