@@ -57,9 +57,8 @@ namespace feel
 
         void TransmitMessage(std::string identifier, std::string payload = "") override
         {
-            auto str = identifier + payload;
             std::lock_guard<std::mutex> lock(outputMutex);
-            outputs.push(str);
+            outputs.emplace(identifier + payload);
         }
 
         void IterateAllMessages(std::function<void(const std::string&)> callback) override
@@ -67,7 +66,6 @@ namespace feel
             std::lock_guard<std::mutex> lock(inputMutex);
             while (!inputs.empty())
             {
-
                 callback(inputs.front());
                 inputs.pop();
             }
@@ -109,7 +107,7 @@ namespace feel
                 if (inNormalization)
                 {
                     std::lock_guard<std::mutex> lock(inputMutex);
-                    inputs.push("EN");
+                    inputs.emplace("EN");
                     inNormalization = false;
                 }
                 {
@@ -138,7 +136,7 @@ namespace feel
                                         << std::dec << std::setw(3)
                                         << a
                                         << a / 180.0f * data.max + data.min;
-                                    inputs.push(stream.str());
+                                    inputs.emplace(stream.str());
                                 }
                                 angles[i] = data.min;
                             }
@@ -159,7 +157,7 @@ namespace feel
                         else
                         {
                             std::lock_guard<std::mutex> lock(inputMutex);
-                            inputs.push("DLUnknown Message: " + message);
+                            inputs.emplace("DLUnknown Message: " + message);
                         }
 
                         outputs.pop();
@@ -178,7 +176,7 @@ namespace feel
                             << std::setfill('0') << std::setw(2)
                             << std::hex << i
                             << std::dec << angles[i];
-                        inputs.push(stream.str());
+                        inputs.emplace(stream.str());
                     }
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(1000/60));

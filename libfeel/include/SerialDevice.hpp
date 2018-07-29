@@ -107,10 +107,9 @@ namespace feel
 
 		void TransmitMessage(std::string identifier, std::string payload = "") override
 		{
-			auto str = identifier + payload + "#";
             {
                 std::lock_guard<std::mutex> lock(outputMutex);
-                outputs.push(str);
+                outputs.emplace(identifier + payload + "#");
             }
             outputCondition.notify_one();
 		}
