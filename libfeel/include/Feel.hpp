@@ -1,5 +1,5 @@
 #pragma once
-#include "SerialDevice.hpp"
+#include "Device.hpp"
 #include "Finger.hpp"
 #include "IncomingMessage.hpp"
 #include "FeelStatus.hpp"
@@ -11,6 +11,8 @@
 #include <functional>
 #include <algorithm>
 #include <string>
+#include <iostream>
+#include <sstream>
 #include <limits>
 
 namespace feel
@@ -24,10 +26,6 @@ namespace feel
             calibrationData.angles.fill(FingerCalibrationData{ 0, 180 });
             this->device = device;
         }
-
-        Feel() : Feel(new SerialDevice())
-        {}
-
 
         ~Feel()
         {

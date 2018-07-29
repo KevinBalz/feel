@@ -4,7 +4,8 @@
 #define FEEL_API
 #endif
 #include "Feel.hpp"
-#include "Finger.hpp"
+#include "SerialDevice.hpp"
+#include "SimulatorDevice.hpp"
 #include <memory>
 
 extern "C"
@@ -16,14 +17,19 @@ extern "C"
         int size;
     };
 
-	FEEL_API feel::Feel* FEEL_CreateNew()
-	{
-		return new feel::Feel();
-	}
-
     FEEL_API feel::Feel* FEEL_CreateNewWithDevice(feel::Device* device)
     {
         return new feel::Feel(device);
+    }
+
+	FEEL_API feel::Feel* FEEL_CreateWithSerialDevice()
+	{
+        return new feel::Feel(new feel::SerialDevice());
+	}
+
+    FEEL_API feel::Feel* FEEL_CreateWithSimulatorDevice()
+    {
+        return new feel::Feel(new feel::SimulatorDevice());
     }
 
 	FEEL_API void FEEL_Connect(feel::Feel* feel, const char* deviceName)
@@ -88,9 +94,19 @@ extern "C"
         feel->SetFingerAngle(static_cast<feel::Finger>(finger), angle, force);
     }
 
+    FEEL_API void FEEL_ReleaseFinger(feel::Feel* feel, int finger)
+    {
+        return feel->ReleaseFinger(static_cast<feel::Finger>(finger));
+    }
+
     FEEL_API float FEEL_GetFingerAngle(feel::Feel* feel, int finger)
     {
         return feel->GetFingerAngle(static_cast<feel::Finger>(finger));
+    }
+
+    FEEL_API int FEEL_GetStatus(feel::Feel* feel)
+    {
+        return feel->GetStatus();
     }
 
 	FEEL_API void FEEL_ParseMessages(feel::Feel* feel)

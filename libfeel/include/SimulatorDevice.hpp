@@ -1,14 +1,15 @@
 #pragma once
-
 #include "Device.hpp"
 #include "Finger.hpp"
 #include "CalibrationData.hpp"
 #include <thread>
+#include <mutex>
 #include <queue>
 #include <chrono>
 #include <array>
 #include <iomanip>
 #include <string>
+#include <sstream>
 #include <atomic>
 
 namespace feel

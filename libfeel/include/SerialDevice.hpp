@@ -5,6 +5,7 @@
 #include <thread>
 #include <queue>
 #include <iostream>
+#include <sstream>
 #include <atomic>
 #include <Windows.h>
 #include <winreg.h>
