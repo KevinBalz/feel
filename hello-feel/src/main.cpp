@@ -55,7 +55,6 @@ int main()
     }
 
 	feel.BeginSession();
-	feel.SubscribeForFingerUpdates();
 
 	while (!shouldTerminate)
 	{

@@ -88,7 +88,6 @@ namespace feel
         {
             bool inNormalization = false;
             bool inSession = false;
-            bool subscribed = false;
             std::array<float, FINGER_TYPE_COUNT> angles = { 0 };
             std::array<float, FINGER_TYPE_COUNT> targetAngles = { 0 };
             CalibrationData calibrationData;
@@ -124,7 +123,6 @@ namespace feel
                         {
                             inNormalization = true;
                             inSession = false;
-                            subscribed = false;
 
                             std::lock_guard<std::mutex> lock(inputMutex);
                             for (int i = 0; i < feel::FINGER_TYPE_COUNT; i++)
@@ -152,11 +150,6 @@ namespace feel
                         else if (messageIdentifier == "ES")
                         {
                             inSession = false;
-                            subscribed = false;
-                        }
-                        else if (messageIdentifier == "SF")
-                        {
-                            subscribed = message.substr(2, 1) == "1";
                         }
                         else if (messageIdentifier == "WF")
                         {
@@ -173,7 +166,7 @@ namespace feel
                     }
                 }
 
-                if (subscribed)
+                if (inSession)
                 {
                     std::lock_guard<std::mutex> lock(inputMutex);
                     for (int i = 0; i < feel::FINGER_TYPE_COUNT; i++)

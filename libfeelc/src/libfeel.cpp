@@ -83,11 +83,6 @@ extern "C"
         feel->EndSession();
     }
 
-    FEEL_API void FEEL_SubscribeForFingerUpdates(feel::Feel* feel, bool active)
-    {
-        feel->SubscribeForFingerUpdates(active);
-    }
-
     FEEL_API void FEEL_SetFingerAngle(feel::Feel* feel, int finger, float angle, int force)
     {
         feel->SetFingerAngle(static_cast<feel::Finger>(finger), angle, force);

@@ -73,11 +73,6 @@ namespace feel
 			device->TransmitMessage("ES");
 		}
 
-		void SubscribeForFingerUpdates(bool active = true)
-		{
-			device->TransmitMessage("SF", active ? "1" : "0");
-		}
-
 		void SetFingerAngle(Finger finger, float angle, int force)
 		{
 			int fingerNumber = static_cast<int>(finger);
