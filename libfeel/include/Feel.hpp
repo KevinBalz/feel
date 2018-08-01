@@ -35,11 +35,13 @@ namespace feel
         void Connect(const char* deviceName)
         {
             device->Connect(deviceName);
+            UpdateStatus();
         }
 
         void Disconnect()
         {
             device->Disconnect();
+            UpdateStatus();
         }
 
         std::vector<std::string> GetAvailableDevices()
@@ -64,11 +66,14 @@ namespace feel
 		void BeginSession()
         {
             device->TransmitMessage("BS");
+            status = FeelStatus::Active;
         }
 
 		void EndSession()
 		{
 			device->TransmitMessage("ES");
+            status = FeelStatus::DeviceConnected;
+            UpdateStatus();
 		}
 
 		void SetFingerAngle(Finger finger, float angle, int force)
@@ -101,7 +106,7 @@ namespace feel
             calibrationData = data;
         }
 
-		float GetFingerAngle(Finger finger)
+		float GetFingerAngle(Finger finger) const
 		{
             auto angle = fingerAngles[static_cast<int>(finger)];
             auto data = calibrationData.angles[static_cast<int>(finger)];
@@ -114,33 +119,14 @@ namespace feel
 			debugLogCallback = callback;
 		}
 
-        FeelStatus GetStatus()
+        FeelStatus GetStatus() const
         {
-            switch (status)
-            {
-                case FeelStatus::DeviceDisconnected:
-                case FeelStatus::DeviceConnecting:
-                case FeelStatus::DeviceConnected:
-                {
-                    switch (device->GetStatus())
-                    {
-                        case DeviceStatus::Disconnected:
-                            status = FeelStatus::DeviceDisconnected;
-                            break;
-                        case DeviceStatus::Connecting:
-                            status = FeelStatus::DeviceConnecting;
-                            break;
-                        case DeviceStatus::Connected:
-                            status = FeelStatus::DeviceConnected;
-                            break;
-                    }
-                }
-                default: return status;
-            }
+            return status;
         }
 
 		void ParseMessages()
 		{
+            UpdateStatus();
 			device->IterateAllMessages([&](auto message)
 			{
 				static std::map<std::string, IncomingMessage> incomingMessageMap =
@@ -197,5 +183,28 @@ namespace feel
 		};
 		std::array<float, FINGER_TYPE_COUNT> fingerAngles = {0};
         CalibrationData calibrationData;
+
+        void UpdateStatus()
+        {
+            switch (status)
+            {
+                case FeelStatus::DeviceDisconnected:
+                case FeelStatus::DeviceConnecting:
+                case FeelStatus::DeviceConnected:
+                    switch (device->GetStatus())
+                    {
+                        case DeviceStatus::Disconnected:
+                            status = FeelStatus::DeviceDisconnected;
+                            break;
+                        case DeviceStatus::Connecting:
+                            status = FeelStatus::DeviceConnecting;
+                            break;
+                        case DeviceStatus::Connected:
+                            status = FeelStatus::DeviceConnected;
+                            break;
+                    }
+                    break;
+            }
+        }
 	};
 }
