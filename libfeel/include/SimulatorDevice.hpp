@@ -87,8 +87,8 @@ namespace feel
         {
             bool inNormalization = false;
             bool inSession = false;
-            std::array<float, FINGER_TYPE_COUNT> angles = { 0 };
-            std::array<float, FINGER_TYPE_COUNT> targetAngles = { 0 };
+            std::array<int, FINGER_TYPE_COUNT> angles = { 0 };
+            std::array<int, FINGER_TYPE_COUNT> targetAngles = { 0 };
             CalibrationData calibrationData;
             calibrationData.angles =
             {
@@ -136,7 +136,7 @@ namespace feel
                                         << std::hex << i
                                         << std::dec << std::setw(3)
                                         << a
-                                        << a / 180.0f * data.max + data.min;
+                                        << (int) std::round(a / 180.0f * data.max + data.min);
                                     inputs.emplace(stream.str());
                                 }
                                 angles[i] = data.min;
@@ -153,7 +153,7 @@ namespace feel
                         else if (messageIdentifier == "WF")
                         {
                             int fingerIndex = std::stoul(message.substr(2, 2) , nullptr, 16);
-                            angles[fingerIndex] = std::stof(message.substr(6));
+                            angles[fingerIndex] = std::stoi(message.substr(6));
                         }
                         else
                         {

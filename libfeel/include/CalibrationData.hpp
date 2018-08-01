@@ -5,8 +5,8 @@ namespace feel
 {
     struct FingerCalibrationData
     {
-        float min;
-        float max;
+        int min;
+        int max;
     };
 
     struct CalibrationData

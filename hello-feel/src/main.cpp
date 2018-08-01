@@ -70,7 +70,7 @@ int main()
             if (angle >= 90)
             {
                 float force = (angle - 90) / 90 * 99;
-                feel.SetFingerAngle(finger, 90, force);
+                feel.SetFingerAngle(finger, 90, std::round(force));
             }
             else
             {

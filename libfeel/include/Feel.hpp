@@ -10,6 +10,7 @@
 #include <cassert>
 #include <functional>
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -58,7 +59,7 @@ namespace feel
 
         void StartNormalization()
         {
-            calibrationData.angles.fill(FingerCalibrationData{ std::numeric_limits<float>::max() , std::numeric_limits<float>::min() });
+            calibrationData.angles.fill(FingerCalibrationData{ std::numeric_limits<int>::max() , std::numeric_limits<int>::min() });
             device->TransmitMessage("IN");
             status = FeelStatus::Normalization;
         }
@@ -66,6 +67,10 @@ namespace feel
 		void BeginSession()
         {
             device->TransmitMessage("BS");
+            for (int i = 0; i < feel::FINGER_TYPE_COUNT; i++)
+            {
+                fingerAngles[i] = calibrationData.angles[i].min;
+            }
             status = FeelStatus::Active;
         }
 
@@ -80,15 +85,15 @@ namespace feel
 		{
 			int fingerNumber = static_cast<int>(finger);
             auto data = calibrationData.angles[fingerNumber];
-            angle = angle / 180 * data.max + data.min;
+            int degree = (int) std::round(angle / 180 * data.max + data.min);
             force = 99 - force;
 			std::stringstream stream;
 			stream
 				<< std::setfill('0') << std::setw(2)
 				<< std::hex << fingerNumber
 				<< std::dec << std::setw(2)
-                << force 
-                << angle;
+                << force
+                << degree;
 			device->TransmitMessage("WF", stream.str());
 		}
 
@@ -149,7 +154,7 @@ namespace feel
                         std::string fingerAngle = message.substr(4);
                         std::cout << "Finger: " << fingerIdentifier << " Angle: " << fingerAngle << std::endl;
                         int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
-                        fingerAngles[fingerIndex] = std::stof(fingerAngle);
+                        fingerAngles[fingerIndex] = std::stoi(fingerAngle);
                     } break;
                     case IncomingMessage::NormalizationData:
                     {
@@ -158,7 +163,7 @@ namespace feel
                         std::string fingerAngle = message.substr(7);
                         std::cout << "Init Finger: " << fingerIdentifier << " Real Angle: " << realAngle << " Angle: " << fingerAngle << std::endl;
                         int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
-                        float angle = std::stof(fingerAngle);
+                        int angle = std::stoi(fingerAngle);
                         auto data = calibrationData.angles[fingerIndex];
                         data.min = std::min(data.min, angle);
                         data.max = std::max(data.max, angle);
