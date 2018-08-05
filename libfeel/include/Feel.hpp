@@ -154,7 +154,7 @@ namespace feel
                         std::string fingerAngle = message.substr(4);
                         std::cout << "Finger: " << fingerIdentifier << " Angle: " << fingerAngle << std::endl;
                         int fingerIndex = std::stoul(fingerIdentifier, nullptr, 16);
-                        fingerAngles[fingerIndex] = std::stoi(fingerAngle);
+                        fingerAngles[fingerIndex] = fingerAngles[fingerIndex] * 0.9f + std::stoi(fingerAngle) * 0.1f;
                     } break;
                     case IncomingMessage::NormalizationData:
                     {

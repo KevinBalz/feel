@@ -67,10 +67,11 @@ int main()
             float angle = feel.GetFingerAngle(finger);
             std::cout << "Finger " << i << ": " <<  angle << std::endl;
 
-            if (angle >= 90)
+            const float midAngle = 45;
+            if (angle <= midAngle)
             {
-                float force = (angle - 90) / 90 * 99;
-                feel.SetFingerAngle(finger, 90, std::round(force));
+                float force = (midAngle - angle) / midAngle * 99;
+                feel.SetFingerAngle(finger, midAngle, std::round(force));
             }
             else
             {
