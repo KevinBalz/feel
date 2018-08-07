@@ -85,7 +85,7 @@ namespace feel
 		{
 			int fingerNumber = static_cast<int>(finger);
             auto data = calibrationData.angles[fingerNumber];
-            int degree = (int) std::round(angle / 180 * data.max + data.min);
+            //int degree = (int) std::round(angle / 180 * data.max + data.min);
             force = 99 - force;
 			std::stringstream stream;
 			stream
@@ -93,7 +93,8 @@ namespace feel
 				<< std::hex << fingerNumber
 				<< std::dec << std::setw(2)
                 << force
-                << degree;
+                << std::dec << std::setw(3)
+                << (int) std::round(angle);
 			device->TransmitMessage("WF", stream.str());
 		}
 
