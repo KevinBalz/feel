@@ -3,6 +3,7 @@
 #include <chrono>
 #include <iostream>
 #include "SimulatorDevice.hpp"
+#include "SerialDevice.hpp"
 #include <Windows.h>
 
 
@@ -21,7 +22,8 @@ BOOL ConsoleCtrlHandler(DWORD dwCtrlType)
 
 int main()
 {
-	feel::Feel feel(new feel::SimulatorDevice());
+	feel::Feel feel(new feel::SerialDevice());
+    //feel::Feel feel(new feel::SimulatorDevice());
 
     auto devices = feel.GetAvailableDevices();
     if (devices.empty())
@@ -55,6 +57,16 @@ int main()
     }
 
 	feel.BeginSession();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    feel.ParseMessages();
+    std::array<bool, feel::FINGER_TYPE_COUNT> fingerBelow;
+    std::array<std::array<float, 10>, feel::FINGER_TYPE_COUNT> lastPositions;
+
+    for (int i = 0; i < feel::FINGER_TYPE_COUNT; i++)
+    {
+        feel::Finger finger = static_cast<feel::Finger>(i);
+        lastPositions[i].fill(feel.GetFingerAngle(finger));
+    }
 
 	while (!shouldTerminate)
 	{
@@ -65,21 +77,46 @@ int main()
         {
             feel::Finger finger = static_cast<feel::Finger>(i);
             float angle = feel.GetFingerAngle(finger);
-            std::cout << "Finger " << i << ": " <<  angle << std::endl;
+            float velocity = (angle - lastPositions[i][0]) * 10 * 0.016f;
+            std::cout << "Finger " << i << ": " << angle
+                << " Velocity " << velocity;
 
-            const float midAngle = 45;
-            if (angle <= midAngle)
+            const float midAngle = 60;
+            bool released = false;
+            float force;
+            if (fingerBelow[i] && angle > midAngle - 5 && angle + 5 < midAngle && velocity > 0)
             {
-                float force = (midAngle - angle) / midAngle * 99;
-                feel.SetFingerAngle(finger, midAngle, std::round(force));
+                feel.ReleaseFinger(finger);
+                released = true;
+            }
+            else if (angle < midAngle - 10 && velocity < -1)
+            {
+                force = 99;
+                feel.SetFingerAngle(finger, 180, force);
+                fingerBelow[i] = true;
+            }
+            else if (angle < midAngle && std::abs(velocity) > 0.5f)
+            {
+                force = 40;
+                feel.SetFingerAngle(finger, midAngle + (midAngle - angle), force);
+                fingerBelow[i] = true;
             }
             else
             {
                 feel.ReleaseFinger(finger);
+                fingerBelow[i] = false;
+                released = true;
             }
+
+            if (!released) std::cout << " Force " << force;
+            std::cout << std::endl;
+
+            std::rotate(lastPositions[i].begin(), lastPositions[i].begin() + 1, lastPositions[i].end());
+            lastPositions[i][9] = angle;
+
         }
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		std::this_thread::sleep_for(std::chrono::milliseconds(16));
 	}
 
 	feel.EndSession();
