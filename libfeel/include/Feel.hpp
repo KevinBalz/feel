@@ -136,7 +136,7 @@ namespace feel
 		{
             auto angle = fingerAngles[static_cast<int>(finger)];
             auto data = calibrationData.angles[static_cast<int>(finger)];
-            angle = (angle - data.min) / data.max * 180;
+            angle = (angle - data.min) / (data.max - data.min) * 180;
             return angle;
         }
 
