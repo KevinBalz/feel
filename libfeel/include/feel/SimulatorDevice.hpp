@@ -72,8 +72,6 @@ namespace feel
             }
         }
 
-        void IterateAllLogs(std::function<void(std::string)> callback) override
-        {}
     private:
         DeviceStatus status;
         std::queue<std::string> inputs;

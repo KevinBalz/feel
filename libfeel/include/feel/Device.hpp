@@ -15,6 +15,5 @@ namespace feel
         virtual void GetAvailableDevices(std::vector<std::string>& devices) = 0;
 		virtual void TransmitMessage(std::string identifier, std::string payload = "") = 0;
 		virtual void IterateAllMessages(std::function<void(const std::string&)> callback) = 0;
-		virtual void IterateAllLogs(std::function<void(std::string)> callback) = 0;
 	};
 }

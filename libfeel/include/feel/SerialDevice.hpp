@@ -106,17 +106,14 @@ namespace feel
 			}
 		}
 
-		void TransmitMessage(std::string identifier, std::string payload = "") override
-		{
+        void TransmitMessage(std::string identifier, std::string payload = "") override
+        {
             {
                 std::lock_guard<std::mutex> lock(outputMutex);
                 outputs.emplace(identifier + payload + "#");
             }
             outputCondition.notify_one();
 		}
-
-		void IterateAllLogs(std::function<void(std::string)> callback) override
-		{}
 
 	private:
         DeviceStatus status;
