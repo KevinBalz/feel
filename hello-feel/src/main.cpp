@@ -1,20 +1,18 @@
-#include "Feel.hpp"
-
+#include "feel.hpp"
 #include <chrono>
 #include <iostream>
-#include "SimulatorDevice.hpp"
-#include "SerialDevice.hpp"
+#include <atomic>
 #include <Windows.h>
 
 
-static bool shouldTerminate;
-BOOL ConsoleCtrlHandler(DWORD dwCtrlType)
+static std::atomic_flag keepRunning;
+BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
 {
     switch (dwCtrlType)
     {
         case CTRL_C_EVENT:
         case CTRL_CLOSE_EVENT:
-            shouldTerminate = true;
+            keepRunning.clear();
             return TRUE;
         default: return FALSE;
     }
@@ -40,20 +38,20 @@ int main()
     
 	feel.Connect(devices[0].c_str());
 
-    SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
+    keepRunning.test_and_set();
+    SetConsoleCtrlHandler(&ConsoleCtrlHandler, TRUE);
 
     feel.StartNormalization();
-    while (feel.GetStatus() == feel::FeelStatus::Normalization && !shouldTerminate)
+    while (feel.GetStatus() == feel::FeelStatus::Normalization)
     {
+        if (!keepRunning.test_and_set())
+        {
+            feel.Disconnect();
+            return 0;
+        }
         std::cout << "Normalization Frame" << std::endl;
         feel.ParseMessages();
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
-
-    if (shouldTerminate)
-    {
-        feel.Disconnect();
-        return 0;
     }
 
 	feel.BeginSession();
@@ -68,7 +66,7 @@ int main()
         lastPositions[i].fill(feel.GetFingerAngle(finger));
     }
 
-	while (!shouldTerminate)
+	while (keepRunning.test_and_set())
 	{
 		std::cout << "Process Frame" << std::endl;
         feel.ParseMessages();

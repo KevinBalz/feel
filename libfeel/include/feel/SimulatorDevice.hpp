@@ -1,7 +1,7 @@
 #pragma once
-#include "Device.hpp"
-#include "Finger.hpp"
-#include "CalibrationData.hpp"
+#include "feel/Device.hpp"
+#include "feel/Finger.hpp"
+#include "feel/CalibrationData.hpp"
 #include <thread>
 #include <mutex>
 #include <queue>

@@ -3,9 +3,7 @@
 #else
 #define FEEL_API
 #endif
-#include "Feel.hpp"
-#include "SerialDevice.hpp"
-#include "SimulatorDevice.hpp"
+#include "feel.hpp"
 #include <memory>
 
 extern "C"

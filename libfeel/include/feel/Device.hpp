@@ -2,7 +2,7 @@
 #include <string>
 #include <functional>
 #include <vector>
-#include "DeviceStatus.hpp"
+#include "feel/DeviceStatus.hpp"
 
 namespace feel
 {
