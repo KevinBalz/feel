@@ -59,8 +59,12 @@ namespace feel
             UpdateStatus();
         }
 
+        //@{
         /// @brief Get a list of all names of available Devices
-        /// which can be connected to.
+        ///
+        /// Every name can be used to connect via Connect()
+
+        /// @return A Vector with all names
         std::vector<std::string> GetAvailableDevices()
         {
             std::vector<std::string> devices;
@@ -68,11 +72,12 @@ namespace feel
             return std::move(devices);
         }
 
-        /// Get a list of all names of available Devices which can be connected to.
+        /// @post all names have been added to the vector
         void GetAvailableDevices(std::vector<std::string>& devices)
         {
             device->GetAvailableDevices(devices);
         }
+        //@}
 
         /// @brief Starts the Normalization Process
         ///
