@@ -28,7 +28,11 @@ namespace feel
 
     class Feel
     {
-    public:       
+    public:
+
+        /// @brief Creates a new instance
+        /// @param device The underlying device to use.
+        /// @note The given device will be deleted in the destructor.       
         Feel(Device* device)
         {
             calibrationData.angles.fill(FingerCalibrationData{ 0, 180 });
@@ -40,25 +44,23 @@ namespace feel
             delete device;
         }
 
-        /** Connects to the device by its name.
-         *  Valid names are returned by GetAvailableDevices
-         */
+        /// @brief Start to connect to the device.
+        /// @param deviceName The name of the device to connect to. (A name returned by GetAvailableDevices() )
         void Connect(const char* deviceName)
         {
             device->Connect(deviceName);
             UpdateStatus();
         }
 
-        /// Diconnect from the Device
+        /// @brief Diconnect from the Device
         void Disconnect()
         {
             device->Disconnect();
             UpdateStatus();
         }
 
-        /** Get a list of all names of available Devices
-         *  which can be connected to.
-         */
+        /// @brief Get a list of all names of available Devices
+        /// which can be connected to.
         std::vector<std::string> GetAvailableDevices()
         {
             std::vector<std::string> devices;
@@ -72,9 +74,9 @@ namespace feel
             device->GetAvailableDevices(devices);
         }
 
-        /// Starts the Normalization Process
-        /** Afterward BeginSession() can be called
-         */
+        /// @brief Starts the Normalization Process
+        ///
+        /// Afterwards BeginSession() can be called
         void StartNormalization()
         {
             calibrationData.angles.fill(FingerCalibrationData{ std::numeric_limits<int>::max() , std::numeric_limits<int>::min() });
@@ -82,10 +84,21 @@ namespace feel
             status = FeelStatus::Normalization;
         }
 
-        /// Starts the session.
-        /**  Ensure the device is calibrated using StartNormalization()
-         *  or using SetCalibrationData(feel::CalibrationData&)
-         */
+        /// @brief Set the normalization data.
+        ///
+        /// This can be used to skip StartNormalization() 
+        /// when used with data from a previous session.
+        /// @param data The normalization data.
+        void SetCalibrationData(CalibrationData& data)
+        {
+            calibrationData = data;
+        }
+
+        /// @brief Starts the session.
+        ///
+        /// Ensure the device is calibrated using StartNormalization()
+        /// or using SetCalibrationData(feel::CalibrationData&),
+        /// otherwise angles returned from GetFingerAngle() might not be correct
 		void BeginSession()
         {
             device->TransmitMessage("BS");
@@ -96,7 +109,7 @@ namespace feel
             status = FeelStatus::Active;
         }
 
-        /// Ends the session started by BeginSession()
+        /// @brief Ends the session started by BeginSession()
 		void EndSession()
 		{
 			device->TransmitMessage("ES");
@@ -104,11 +117,11 @@ namespace feel
             UpdateStatus();
 		}
 
-        /// Move a finger to a specific angle
-        /** @param finger The finger to move
-         *  @param angle  The angle to move the finger to (0-180)
-         *  @param force  How much force should be applied (0-99)
-         */
+        /// @brief Move a finger to a specific angle
+        /// @param finger The finger to move
+        /// @param angle  The angle to move the finger to (0-180)
+        /// @param force  How much force should be applied (0-99)
+        /// \note The force may not be applied immediately.
 		void SetFingerAngle(Finger finger, float angle, int force)
 		{
 			int fingerNumber = static_cast<int>(finger);
@@ -136,6 +149,10 @@ namespace feel
             status.on = true;
 		}
 
+        /// @brief Release the force from a finger.
+        ///
+        /// This makes the finger be able to move freely
+        /// @param finger The finger to release
         void ReleaseFinger(Finger finger)
         {
             FingerOperationStatus& status = fingerStatus[static_cast<int>(finger)];
@@ -148,11 +165,10 @@ namespace feel
             status.on = false;
         }
 
-        void SetCalibrationData(CalibrationData& data)
-        {
-            calibrationData = data;
-        }
-
+        /// @brief Get the angle a finger is at.
+        ///
+        /// @param finger The finger to get the angle from.
+        /// @return The angle the finger is at, ranges from 0 - 180.
 		float GetFingerAngle(Finger finger) const
 		{
             auto angle = fingerAngles[static_cast<int>(finger)];
@@ -161,23 +177,24 @@ namespace feel
             return angle;
         }
 
-        /** Set which function should be called when a Debug message from
-         *  the device is processed
-         */
+        /// @brief Set which function should be called when a Debug message from
+        /// the device is processed
 		void SetDebugLogCallback(std::function<void(std::string) > callback)
 		{
 			debugLogCallback = callback;
 		}
 
+        /// @brief Get the current feel::FeelStatus
+        /// @return The current status
         FeelStatus GetStatus() const
         {
             return status;
         }
 
-        /** Processes all incoming messages since the last call
-         *  After calling it, all values are updated to the latest version.
-         *  This should be called once per frame.
-         */
+        /// @brief Processes all incoming messages since the last call
+        ///
+        /// After calling it, all values are updated to the latest version.
+        /// This function should typically be called once per frame.
 		void ParseMessages()
 		{
             UpdateStatus();
@@ -227,6 +244,7 @@ namespace feel
 				}
 			});
 		}
+
 	private:
         FeelStatus status;
         Device* device = nullptr;
