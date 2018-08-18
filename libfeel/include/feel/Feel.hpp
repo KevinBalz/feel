@@ -18,22 +18,18 @@
 
 namespace feel
 {
+    template<typename DevicePtr>
     class Feel
     {
     public:
 
         /// @brief Creates a new instance
         /// @param device The underlying device to use.
-        /// @note The given device will be deleted in the destructor.       
-        Feel(Device* device)
+        /// @note The given device will be deleted in the destructor. 
+        Feel(DevicePtr devicePtr)
         {
             calibrationData.angles.fill(FingerCalibrationData{ 0, 180 });
-            this->device = device;
-        }
-
-        ~Feel()
-        {
-            delete device;
+            device = std::move(devicePtr);
         }
 
         /// @brief Start to connect to the device.
@@ -251,7 +247,7 @@ namespace feel
         };
 
         FeelStatus status;
-        Device* device = nullptr;
+        DevicePtr device;
 		std::function<void(std::string)> debugLogCallback = [](auto s)
         {
 			std::cout << s << std::endl;

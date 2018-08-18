@@ -3,6 +3,7 @@
 #include <iostream>
 #include <atomic>
 #include <Windows.h>
+#include <memory>
 
 
 static std::atomic_flag keepRunning;
@@ -20,7 +21,7 @@ BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
 
 int main()
 {
-	feel::Feel feel(new feel::SerialDevice());
+	auto feel = feel::Create(std::move(std::make_unique<feel::SerialDevice>()));
     //feel::Feel feel(new feel::SimulatorDevice());
 
     auto devices = feel.GetAvailableDevices();
