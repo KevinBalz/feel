@@ -18,14 +18,6 @@
 
 namespace feel
 {
-    struct FingerOperationStatus
-    {
-        bool on = false;
-        int targetAngle = 0;
-        int targetForce = 0;
-    };
-
-
     class Feel
     {
     public:
@@ -251,6 +243,13 @@ namespace feel
 		}
 
 	private:
+        struct FingerOperationStatus
+        {
+            bool on = false;
+            int targetAngle = 0;
+            int targetForce = 0;
+        };
+
         FeelStatus status;
         Device* device = nullptr;
 		std::function<void(std::string)> debugLogCallback = [](auto s)
