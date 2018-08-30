@@ -238,7 +238,7 @@ namespace feel
                 }
                 else
                 {
-                    float forceFactor = std::max(0, status.targetForce + 1 - pos.resistance);
+                    float forceFactor = std::max(0, std::max(status.targetForce, 1) - pos.resistance);
                     pos.angle += forceFactor / frameRate * (pos.angle - status.targetAngle > 0 ? -1 : 1);
                 }
 
